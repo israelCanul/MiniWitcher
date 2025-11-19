@@ -47,12 +47,76 @@ function spawnVillage(x, z) {
     for (let i = 0; i < 5; i++) spawnCitizen(x + (Math.random() - 0.5) * 20, z + (Math.random() - 0.5) * 20);
 }
 
+function createBanditCamp(x, z) {
+    const grp = new THREE.Group();
+    grp.position.set(x, 0.1, z);
+
+    // Hoguera
+    const firePit = new THREE.Group(); grp.add(firePit);
+    firePit.add(createCube(0.2, 0.2, 1.0, PALETTE.wood, 0, 0.1, 0)); // Leño
+    firePit.add(createCube(0.2, 0.2, 1.0, PALETTE.wood, 0, 0.1, 0)).rotation.y = Math.PI / 2; // Leño
+    // Rocas alrededor de la hoguera
+    for (let i = 0; i < 5; i++) {
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ color: PALETTE.rock }));
+        rock.position.set(Math.cos(i * 1.25) * 0.8, 0.1, Math.sin(i * 1.25) * 0.8);
+        firePit.add(rock);
+    }
+    const fireLight = new THREE.PointLight(0xffaa33, 0.8, 10);
+    fireLight.position.y = 0.5;
+    firePit.add(fireLight);
+
+    // Props y desorden del campamento
+    addCampProps(grp);
+
+    const huts = [];
+    // Cabañas alrededor de la hoguera
+    const numHuts = 2 + Math.floor(Math.random() * 2); // 2 o 3 cabañas
+    const radius = 6;
+    for (let i = 0; i < numHuts; i++) {
+        const angle = (i / numHuts) * Math.PI * 2 + Math.random() * 0.5;
+        const hutX = Math.cos(angle) * radius;
+        const hutZ = Math.sin(angle) * radius;
+        const hut = createBanditHut(hutX, hutZ, -angle - Math.PI / 2);
+        grp.add(hut);
+        huts.push(hut);
+    }
+
+    worldGroup.add(grp);
+    banditCamps.push({ x, z, spawned: false, group: grp, huts: huts });
+}
+
 function createCave(x, z) {
     const grp = new THREE.Group(); grp.position.set(x, 0, z);
     const m = new THREE.Mesh(new THREE.DodecahedronGeometry(2.5, 0), new THREE.MeshStandardMaterial({ color: 0x212121 }));
     m.scale.set(1.5, 0.6, 1.5); m.castShadow = true; grp.add(m);
     worldGroup.add(grp);
     addCollider(x, z, 3);
+}
+
+function createBanditHut(x, z, rotation) {
+    const hut = new THREE.Group();
+    hut.position.set(x, 0, z);
+    hut.rotation.y = rotation;
+
+    // Estructura simple de madera
+    hut.add(createCube(0.2, 1.5, 0.2, PALETTE.wood, 1.2, 0.75, 0)); // Poste
+    hut.add(createCube(0.2, 1.5, 0.2, PALETTE.wood, -1.2, 0.75, 0)); // Poste
+    const roof = createCube(2.5, 0.2, 2.5, PALETTE.banditLeather, 0, 1.5, 0);
+    roof.rotation.x = -0.3; // Techo inclinado
+    hut.add(roof);
+    addCollider(x, z, 2);
+    return hut;
+}
+
+function addCampProps(campGroup) {
+    // Añade barriles, cajas, etc.
+    for (let i = 0; i < 3; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 2 + Math.random() * 2;
+        const prop = createCube(0.6, 0.8, 0.6, PALETTE.wood, Math.cos(angle) * radius, 0.4, Math.sin(angle) * radius);
+        if (Math.random() > 0.5) prop.scale.set(0.8, 1.2, 0.8); // Barril
+        campGroup.add(prop);
+    }
 }
 
 function createPortalVisual(x, z) {
@@ -205,12 +269,7 @@ function spawnRandomEnemies(n) {
     for (let i = 0; i < n; i++) {
         let x = (Math.random() - 0.5) * 150, z = (Math.random() - 0.5) * 150;
         if (Math.abs(x) > 20 || Math.abs(z) > 20) {
-            let rand = Math.random();
-            if (rand < 0.5) {
-                createGoblin(x, z);
-            } else if (rand < 0.9) {
-                createEnemy(x, z, 'bandit');
-            } else {
+            if (Math.random() < 0.5) { createGoblin(x, z); } else {
                 createOgre(x, z);
             }
         }
@@ -221,6 +280,8 @@ function spawnStaticSwampPlants() { swampCaves.forEach(c => createPlant(c.x + 5,
 
 function loadBiome(bx, by) {
     worldGroup.clear();
+    banditCamps.forEach(c => c.group.children.forEach(child => { if (child.isPointLight) c.group.remove(child) }));
+    banditCamps = [];
     solidColliders = [];
     enemies = [];
     guards = [];
@@ -273,6 +334,40 @@ function loadBiome(bx, by) {
         }
         if (safe) {
             spawnVillage(vx, vz);
+        }
+    }
+
+    if (data.type === 'forest') {
+        let numCamps = 4 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < numCamps; i++) {
+            let safe = false;
+            let campX, campZ;
+            let attempts = 0;
+            while (!safe && attempts < 100) {
+                let angle = Math.random() * Math.PI * 2;
+                let radius = 40 + Math.random() * 50; // 40 a 90 unidades del centro
+                campX = Math.cos(angle) * radius;
+                campZ = Math.sin(angle) * radius;
+                safe = true;
+                // Comprobar distancia a todas las aldeas
+                for (let v of villageCenters) {
+                    if (Math.hypot(campX - v.x, campZ - v.z) < 60) {
+                        safe = false;
+                        break;
+                    }
+                }
+                // Comprobar distancia a otros campamentos
+                if (safe) {
+                    for (let c of banditCamps) {
+                        if (Math.hypot(campX - c.x, campZ - c.z) < 60) {
+                            safe = false;
+                            break;
+                        }
+                    }
+                }
+                attempts++;
+            }
+            if (safe) createBanditCamp(campX, campZ);
         }
     }
 

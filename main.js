@@ -198,6 +198,7 @@ function animate() {
     const time = clock.getElapsedTime();
 
     checkPortals();
+    checkBanditCampSpawns();
     checkCaveSpawns(dt);
 
     let dx = 0, dz = 0;
@@ -225,4 +226,25 @@ function animate() {
 
     if (player.stam < 100) { player.stam += 10 * dt; updateUI(); }
     renderer.render(scene, camera);
+}
+
+function checkBanditCampSpawns() {
+    const spawnDist = 35;
+    banditCamps.forEach(camp => {
+        if (!camp.spawned && player.mesh.position.distanceTo(new THREE.Vector3(camp.x, 0, camp.z)) < spawnDist) {
+            camp.spawned = true; // Marcar como usado para no generar más
+            console.log(`Bandit ambush triggered at camp ${camp.x.toFixed(0)}, ${camp.z.toFixed(0)}`);
+
+            camp.huts.forEach(hut => {
+                const hutWorldPos = new THREE.Vector3();
+                hut.getWorldPosition(hutWorldPos);
+
+                // Vector hacia la derecha de la cabaña
+                const rightVector = new THREE.Vector3(1, 0, 0).applyQuaternion(hut.quaternion);
+
+                createEnemy(hutWorldPos.x + rightVector.x * 1.5, hutWorldPos.z + rightVector.z * 1.5, 'Bandit');
+                createEnemy(hutWorldPos.x - rightVector.x * 1.5, hutWorldPos.z - rightVector.z * 1.5, 'Bandit');
+            });
+        }
+    });
 }

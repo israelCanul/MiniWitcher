@@ -238,10 +238,15 @@ function updateEntities(dt, t) {
             let move = false;
             if (e.type && e.type !== 'plant') {
                 const d = player.mesh.position.distanceTo(e.mesh.position);
-                if (d < 25 && d > 1.5) {
+                // Si el bandido está inactivo, solo se activa si el jugador está muy cerca
+                if (e.state === 'idle' && d < 15) {
+                    e.state = 'chase'; // Cambia a modo persecución
+                }
+
+                if (e.state === 'chase' && d < 25 && d > 1.5) {
                     e.mesh.lookAt(player.mesh.position); e.mesh.translateZ(e.speed * dt); move = true;
                     if (d < 2 && !e.attacking) { e.attacking = true; setTimeout(() => { damageEntity(player, 5); e.attacking = false; updateUI(); if (player.hp <= 0) handleDeath(); }, 500); }
-                }
+                } else if (d >= 25) { e.state = 'idle'; } // Vuelve a inactivo si el jugador se aleja
             }
             if (e.type === 'crocodile' || e.type === 'plant') animateMonster(e, move, t);
             else animateChar(e, move, t);

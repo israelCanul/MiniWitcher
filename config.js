@@ -9,6 +9,7 @@ var mapCtx, mapCanvas;
 var isRunning = false;
 
 var currentBiomeCoords = { x: 0, y: 0 };
+var banditCamps = [];
 var swampCaves = [];
 var villageCenters = [];
 var activePortals = [];
