@@ -5,6 +5,7 @@ var TILE_SIZE = 2;
 var scene, camera, renderer, clock, player;
 var enemies = [], guards = [], citizens = [], particles = [], solidColliders = [];
 var worldGroup;
+var projectiles = [];
 var mapCtx, mapCanvas;
 var isRunning = false;
 

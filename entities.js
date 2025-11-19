@@ -37,8 +37,9 @@ function spawnGuards(x, z) {
         const grp = createCharacterMesh(PALETTE.soldierArmor, PALETTE.skin, PALETTE.soldierDetail);
         grp.userData.parts.head.add(createCube(0.42, 0.3, 0.42, PALETTE.soldierDetail, 0, 0.1, 0));
         grp.userData.parts.armR.add(createCube(0.05, 2.5, 0.05, 0x5d4037, 0, -0.5, 0.15));
-        grp.position.set(gx, 0, gz); worldGroup.add(grp);
-        guards.push({ mesh: grp, parts: grp.userData.parts, hp: 50, speed: 3.5, attacking: false, home: { x, z } });
+        grp.position.set(gx, 0, gz);
+        worldGroup.add(grp);
+        guards.push({ mesh: grp, parts: grp.userData.parts, hp: ENEMY_STATS.guard.hp, speed: ENEMY_STATS.guard.speed, attacking: false, home: { x, z } });
     }
 }
 
@@ -54,7 +55,7 @@ function createEnemy(x, z, type) {
     dagger.add(createCube(0.05, 0.4, 0.05, PALETTE.rock, 0, -0.7, 0.15)); // Hoja
     parts.armR.add(dagger);
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'bandit', hp: 30, speed: 2.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'bandit', hp: ENEMY_STATS.bandit.hp, speed: ENEMY_STATS.bandit.speed, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createGoblin(x, z) {
@@ -92,14 +93,15 @@ function createGoblin(x, z) {
 
     // Hombrera de armadura
     parts.armL.add(createCube(0.3, 0.3, 0.3, PALETTE.soldierArmor, 0, 0.2, 0));
-    // Hacha simple en lugar de garrote
-    const weapon = new THREE.Group();
-    weapon.add(createCube(0.05, 0.7, 0.05, PALETTE.wood, 0, -0.6, 0.15)); // Mango
-    weapon.add(createCube(0.1, 0.3, 0.2, PALETTE.rock, 0, -0.9, 0.15)); // Cabeza del hacha
-    parts.armR.add(weapon);
+
+    // Arco en lugar de hacha
+    const bow = new THREE.Group();
+    bow.add(createCube(0.05, 0.8, 0.1, PALETTE.wood, 0, 0, 0)); // Cuerpo del arco
+    bow.children[0].scale.y = 1.5; // Estirar para forma de arco
+    parts.armL.add(bow); // El arco se sostiene con la mano izquierda
 
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    const goblinData = { mesh: grp, parts: grp.userData.parts, type: 'goblin', hp: 20, speed: 3, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() };
+    const goblinData = { mesh: grp, parts: grp.userData.parts, type: 'goblin', hp: ENEMY_STATS.goblin.hp, speed: ENEMY_STATS.goblin.speed, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() };
     enemies.push(goblinData);
     return goblinData; // Devolvemos los datos para poder añadirle un home
 }
@@ -111,10 +113,24 @@ function createGoblinKing(x, z, portalData) {
     enemies.pop(); // Elimina el último goblin añadido, que es nuestro futuro rey.
     const king = kingData.mesh;
 
-    king.scale.set(1.1, 1.1, 1.1); // Más grande que un goblin normal
-    kingData.hp = 80; // Mucha más vida
+    // 1. El doble de grande que un goblin normal (0.8 * 2 = 1.6)
+    king.scale.set(1.6, 1.6, 1.6);
+    kingData.hp = ENEMY_STATS.goblin_king.hp;
     kingData.type = 'goblin_king';
     kingData.portalData = portalData; // Guardamos la info del portal
+
+    // 2. Armadura de Oro
+    const goldColor = 0xffd700;
+    kingData.parts.armL.children[0].material.color.set(goldColor); // Hombrera
+    kingData.parts.armR.children[0].material.color.set(goldColor); // Hombrera
+    king.children[0].material.color.set(goldColor); // Pechera (torso)
+
+    // 3. Espada Enorme
+    kingData.parts.armL.remove(kingData.parts.armL.children[1]); // Quitamos el arco que hereda de createGoblin
+    const greatsword = new THREE.Group();
+    greatsword.add(createCube(0.15, 2.0, 0.1, 0x424242, 0, -1.2, 0.15)); // Hoja de la espada
+    greatsword.add(createCube(0.3, 0.3, 0.15, goldColor, 0, -0.3, 0.15)); // Guarda
+    kingData.parts.armR.add(greatsword);
 
     // Corona de oro
     const crown = new THREE.Group();
@@ -142,7 +158,7 @@ function createOgre(x, z) {
     parts.armR.add(club);
 
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'ogre', hp: 100, speed: 1.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'ogre', hp: ENEMY_STATS.ogre.hp, speed: ENEMY_STATS.ogre.speed, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createWerewolf(x, z) {
@@ -160,7 +176,7 @@ function createWerewolf(x, z) {
     parts.armR.add(createCube(0.05, 0.15, 0.05, 0xffffff, -0.08, -0.5, 0.08)); // Garra
 
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'werewolf', hp: 80, speed: 5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'werewolf', hp: ENEMY_STATS.werewolf.hp, speed: ENEMY_STATS.werewolf.speed, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createCrocodile(x, z) {
@@ -180,7 +196,7 @@ function createCrocodile(x, z) {
     const l3 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, 0.5, 0.15, -0.8); grp.add(l3);
     const l4 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, -0.5, 0.15, -0.8); grp.add(l4);
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: { body, tail, l1, l2, l3, l4 }, type: 'crocodile', hp: 120, speed: 1.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    enemies.push({ mesh: grp, parts: { body, tail, l1, l2, l3, l4 }, type: 'crocodile', hp: ENEMY_STATS.crocodile.hp, speed: ENEMY_STATS.crocodile.speed, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createPlant(x, z) {
@@ -195,7 +211,7 @@ function createPlant(x, z) {
     head.add(mouth);
     grp.add(head);
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: { head }, type: 'plant', hp: 150, speed: 0, attacking: false, cooldown: 0 });
+    enemies.push({ mesh: grp, parts: { head }, type: 'plant', hp: ENEMY_STATS.plant.hp, speed: ENEMY_STATS.plant.speed, attacking: false, cooldown: 0 });
 }
 
 function damageEntity(e, dmg) {
@@ -210,8 +226,11 @@ function damageEntity(e, dmg) {
         }
 
         // --- LOOT DROPS ---
-        addGold(Math.floor(Math.random() * 5) + 1);
-        if (Math.random() < 0.5) {
+        const stats = ENEMY_STATS[e.type];
+        if (stats && stats.goldDrop) {
+            addGold(stats.goldDrop.min + Math.floor(Math.random() * (stats.goldDrop.max - stats.goldDrop.min + 1)));
+        }
+        if (stats && Math.random() < stats.itemDropChance) {
             let itemName = e.type + " part";
             addItemToInventory({ name: itemName, quantity: 1 });
         }
@@ -226,14 +245,60 @@ function damageEntity(e, dmg) {
 
 function animateChar(c, move, t) {
     if (!c.parts) return;
-    if (move) {
+
+    // --- Lógica de Animación de Ataque ---
+    if (c.attacking && c.parts.armR) {
+        // Animación de barrido simple para el brazo derecho
+        c.parts.armR.rotation.x = -Math.PI / 2 * Math.sin(c.attackTimer * Math.PI);
+        c.attackTimer = (c.attackTimer || 0) + 0.1; // Incrementa el temporizador de ataque
+        if (c.attackTimer > 1) c.attackTimer = 0;
+    } else if (move) {
+        // Animación de caminar
         if (c.parts.legL) c.parts.legL.rotation.x = Math.sin(t * 15) * 0.8;
         if (c.parts.legR) c.parts.legR.rotation.x = Math.sin(t * 15 + Math.PI) * 0.8;
-        if (!c.attacking) { if (c.parts.armL) c.parts.armL.rotation.x = Math.sin(t * 15 + Math.PI) * 0.8; if (c.parts.armR) c.parts.armR.rotation.x = Math.sin(t * 15) * 0.8; }
+        if (c.parts.armL) c.parts.armL.rotation.x = Math.sin(t * 15 + Math.PI) * 0.8;
+        if (c.parts.armR) c.parts.armR.rotation.x = Math.sin(t * 15) * 0.8;
     } else {
+        // Estado de reposo
         if (c.parts.legL) c.parts.legL.rotation.x = 0; if (c.parts.legR) c.parts.legR.rotation.x = 0;
-        if (!c.attacking) { if (c.parts.armL) c.parts.armL.rotation.x = 0; if (c.parts.armR && c !== player) c.parts.armR.rotation.x = 0; }
+        if (c.parts.armL) c.parts.armL.rotation.x = 0;
+        if (c.parts.armR && c !== player) c.parts.armR.rotation.x = 0;
     }
+}
+
+function createProjectile(startPos, targetPos, speed, damage, life) {
+    const arrow = createCube(0.05, 0.5, 0.05, PALETTE.deadWood, 0, 0, 0);
+    arrow.position.copy(startPos);
+
+    const direction = new THREE.Vector3().subVectors(targetPos, startPos).normalize();
+    const velocity = direction.multiplyScalar(speed);
+
+    projectiles.push({ mesh: arrow, velocity: velocity, life: life || 3, damage: damage });
+    worldGroup.add(arrow);
+}
+
+function showTrajectory(startPos, targetPos, speed) {
+    const points = [];
+    const direction = new THREE.Vector3().subVectors(targetPos, startPos).normalize();
+    const step = direction.multiplyScalar(speed * 0.1); // Simular 10% de la distancia por paso
+
+    let currentPos = startPos.clone();
+    for (let i = 0; i < 10; i++) {
+        points.push(currentPos.clone());
+        currentPos.add(step);
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.7 });
+    const line = new THREE.Line(geometry, material);
+    worldGroup.add(line);
+
+    // La línea se autodestruirá
+    setTimeout(() => {
+        worldGroup.remove(line);
+    }, 1500); // La línea dura 1.5 segundos
+
+    return line;
 }
 
 function animateMonster(e, moving, t) {
@@ -275,11 +340,11 @@ function updateEntities(dt, t) {
                     if (e.home) { // Si tiene un hogar (es un goblin de reino)
                         e.state = 'patrol';
                         e.timer = 0;
-                    } else if (playerDist < 15) { // Si es un enemigo errante
+                    } else if (playerDist < (ENEMY_STATS[e.type]?.aggroRange || 15)) { // Si es un enemigo errante
                         e.state = 'chase';
                     }
-                } else if (e.state === 'patrol') {
-                    if (playerDist < 20) { e.state = 'chase'; } // Si ve al jugador, lo persigue
+                } else if (e.state === 'patrol') { // Lógica de patrullaje
+                    if (playerDist < (ENEMY_STATS[e.type]?.aggroRange || 20)) { e.state = 'chase'; } // Si ve al jugador, lo persigue
                     else {
                         e.timer -= dt;
                         if (e.timer <= 0) { // Elige un nuevo punto de patrulla
@@ -293,12 +358,56 @@ function updateEntities(dt, t) {
                         }
                     }
                 }
-                if (e.state === 'chase') {
-                    if (playerDist < 25 && playerDist > 1.5) {
-                        e.mesh.lookAt(player.mesh.position); e.mesh.translateZ(e.speed * dt); move = true;
-                        if (playerDist < 2 && !e.attacking) { e.attacking = true; setTimeout(() => { damageEntity(player, 5); e.attacking = false; updateUI(); if (player.hp <= 0) handleDeath(); }, 500); }
-                    } else if (playerDist >= 25) {
-                        e.state = e.home ? 'patrol' : 'idle'; // Si tiene hogar vuelve a patrullar, si no, se queda quieto
+                if (e.state === 'chase' && !e.attacking) { // --- LÓGICA DE PERSECUCIÓN Y ATAQUE ---
+                    e.mesh.lookAt(player.mesh.position);
+
+                    // --- ATAQUE A DISTANCIA (SOLO GOBLINS) ---
+                    if (e.type === 'goblin') {
+                        const idealDist = ENEMY_STATS.goblin.attackRange;
+                        if (playerDist > idealDist) {
+                            e.mesh.translateZ(e.speed * dt); move = true;
+                        } else if (playerDist < idealDist - 3) {
+                            e.mesh.translateZ(-e.speed * dt * 0.5); move = true; // Retroceder si está muy cerca
+                        }
+
+                        e.cooldown = (e.cooldown || 0) - dt;
+                        if (e.cooldown <= 0) {
+                            // Fijar la posición del jugador en el momento de apuntar
+                            const targetPosition = player.mesh.position.clone().setY(1);
+
+                            e.attacking = true;
+                            e.attackTimer = 1.5; // 1.5 segundos para apuntar
+                            showTrajectory(e.mesh.position.clone().setY(1.5), targetPosition, 40);
+
+                            setTimeout(() => {
+                                if (e.hp > 0) createProjectile(e.mesh.position.clone().setY(1.5), targetPosition, 40, ENEMY_STATS.goblin.damage, ENEMY_STATS.goblin.projectileLife);
+                                e.attacking = false;
+                                e.cooldown = ENEMY_STATS.goblin.attackSpeed; // Usar velocidad de ataque de stats.js
+                            }, 1500);
+                        }
+                    } else if (playerDist >= (ENEMY_STATS[e.type]?.chaseRange || 25)) {
+                        e.state = e.home ? 'patrol' : 'idle'; // Vuelve a su estado si el jugador se aleja
+                    }
+                    // --- ATAQUE CUERPO A CUERPO (RESTO DE ENEMIGOS) ---
+                    else {
+                        const stats = ENEMY_STATS[e.type] || { damage: 5, attackSpeed: 2.0, attackRange: 2.0, chaseRange: 25 };
+                        if (playerDist > stats.attackRange) { e.mesh.translateZ(e.speed * dt); move = true; }
+
+                        e.cooldown = (e.cooldown || 0) - dt;
+                        if (playerDist < stats.attackRange && !e.attacking && e.cooldown <= 0) {
+                            e.attacking = true;
+                            e.attackTimer = 0; // Inicia el temporizador de animación
+                            e.cooldown = stats.attackSpeed; // Reiniciar enfriamiento
+
+                            setTimeout(() => {
+                                damageEntity(player, stats.damage);
+                                e.attacking = false;
+                                updateUI();
+                                if (player.hp <= 0) handleDeath();
+                            }, 500);
+                        }
+
+                        if (playerDist >= stats.chaseRange) e.state = e.home ? 'patrol' : 'idle';
                     }
                 }
             }

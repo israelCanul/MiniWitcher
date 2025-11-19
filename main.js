@@ -170,6 +170,39 @@ function updateQuest() {
     }
 }
 
+function updateProjectiles(dt) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        p.mesh.position.add(p.velocity.clone().multiplyScalar(dt));
+        p.life -= dt;
+
+        // Comprobar colisión con el jugador
+        if (p.mesh.position.distanceTo(player.mesh.position) < 1.5) {
+            damageEntity(player, p.damage);
+            updateUI(); // <-- ESTA LÍNEA FALTABA
+            if (player.hp <= 0) handleDeath(); // Comprobar si el jugador ha muerto
+            p.life = 0; // Marcar para eliminar
+        }
+
+        // Comprobar colisión con objetos sólidos
+        const ray = new THREE.Raycaster(p.mesh.position.clone().sub(p.velocity.clone().multiplyScalar(dt)), p.velocity.clone().normalize());
+        const distance = p.velocity.length() * dt;
+        const hits = ray.intersectObjects(worldGroup.children, true);
+
+        if (hits.length > 0 && hits[0].distance < distance) {
+            // Ignorar colisiones con el propio jugador o con otros proyectiles
+            if (hits[0].object !== player.mesh && !projectiles.some(proj => proj.mesh === hits[0].object)) {
+                p.life = 0;
+            }
+        }
+
+        if (p.life <= 0) {
+            worldGroup.remove(p.mesh);
+            projectiles.splice(i, 1);
+        }
+    }
+}
+
 function drawMinimap() {
     if (!mapCtx) return;
     mapCtx.fillStyle = '#1a1a1a'; mapCtx.fillRect(0, 0, 150, 150);
@@ -200,6 +233,7 @@ function animate() {
     checkPortals();
     checkBanditCampSpawns();
     checkCaveSpawns(dt);
+    updateProjectiles(dt);
 
     let dx = 0, dz = 0;
     if (keys.w) dz -= 1; if (keys.s) dz += 1; if (keys.a) dx -= 1; if (keys.d) dx += 1;

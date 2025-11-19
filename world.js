@@ -106,7 +106,7 @@ function createGoblinKingdom(x, z, portalData) {
         const angle = (i / numHuts) * Math.PI * 2;
         const hutX = Math.cos(angle) * radius;
         const hutZ = Math.sin(angle) * radius;
-        kingdomGroup.add(createBanditHut(hutX, hutZ, -angle - Math.PI / 2));
+        kingdomGroup.add(createGoblinHut(hutX, hutZ, -angle - Math.PI / 2));
         const goblin = createGoblin(x + hutX, z + hutZ);
         goblin.home = { x: x, z: z }; // Asignar el centro del reino como su hogar
     }
@@ -133,6 +133,39 @@ function createBanditHut(x, z, rotation) {
     roof.rotation.x = -0.3; // Techo inclinado
     hut.add(roof);
     addCollider(x, z, 2);
+    return hut;
+}
+
+function createGoblinHut(x, z, rotation) {
+    const hut = new THREE.Group();
+    hut.position.set(x, 0, z);
+    hut.rotation.y = rotation;
+
+    // Cabaña de madera
+    const wallHeight = 1.5;
+    const walls = createCube(3, wallHeight, 3, PALETTE.wood, 0, wallHeight / 2, 0);
+    hut.add(walls);
+
+    // Techo de hierba con púas
+    const roofHeight = 2;
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.5, roofHeight, 4), new THREE.MeshStandardMaterial({ color: PALETTE.crop })); // Color de hierba seca
+    roof.position.y = wallHeight + (roofHeight / 2) - 0.5;
+    roof.rotation.y = Math.PI / 4;
+    // Púas en el techo
+    roof.add(createCube(0.1, 1, 0.1, PALETTE.deadWood, 0, roofHeight / 2, 0)); // Púa central
+    hut.add(roof);
+
+    // Estacas defensivas alrededor de la cabaña
+    const stakeCount = 12;
+    const stakeRadius = 2.2;
+    for (let i = 0; i < stakeCount; i++) {
+        const angle = (i / stakeCount) * Math.PI * 2;
+        const stake = createCube(0.15, 1.2, 0.15, PALETTE.deadWood, Math.cos(angle) * stakeRadius, 0.6, Math.sin(angle) * stakeRadius);
+        stake.rotation.z = (Math.random() - 0.5) * 0.2; // Ligeramente inclinadas
+        hut.add(stake);
+    }
+
+    addCollider(x, z, 3);
     return hut;
 }
 
