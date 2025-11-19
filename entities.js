@@ -43,49 +43,132 @@ function spawnGuards(x, z) {
 }
 
 function createEnemy(x, z, type) {
+    // Bandido
     const grp = createCharacterMesh(PALETTE.banditLeather, PALETTE.banditSkin, PALETTE.banditPants);
-    grp.userData.parts.armR.add(createCube(0.05, 0.6, 0.05, 0x999, 0, -0.6, 0.15));
+    const parts = grp.userData.parts;
+
+    // Detalles: Bandana y Daga
+    parts.head.add(createCube(0.45, 0.15, 0.45, 0xb71c1c, 0, 0.1, 0)); // Bandana roja
+    const dagger = new THREE.Group();
+    dagger.add(createCube(0.1, 0.2, 0.1, PALETTE.wood, 0, -0.4, 0.15)); // Mango
+    dagger.add(createCube(0.05, 0.4, 0.05, PALETTE.rock, 0, -0.7, 0.15)); // Hoja
+    parts.armR.add(dagger);
     grp.position.set(x, 0, z); worldGroup.add(grp);
     enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'bandit', hp: 30, speed: 2.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createGoblin(x, z) {
-    const grp = createCharacterMesh(PALETTE.goblinClothes, PALETTE.goblinSkin, PALETTE.goblinClothes);
+    // Usamos blanco para la camisa y negro para los pantalones.
+    const shirtColor = 0xffffff; // Blanco
+    const pantsColor = 0x212121; // Un negro no tan puro
+    const grp = createCharacterMesh(shirtColor, PALETTE.goblinSkin, pantsColor);
     grp.scale.set(0.8, 0.8, 0.8); // Goblins are smaller
-    grp.userData.parts.armR.add(createCube(0.05, 0.5, 0.05, 0x795548, 0, -0.5, 0.15)); // Smaller club
+    const parts = grp.userData.parts;
+
+    // --- Añadir detalles al Goblin ---
+    const head = parts.head;
+    // Limpiamos los ojos genéricos para poner unos nuevos
+    const originalEyes = head.children.filter(c => c.geometry.parameters.width === 0.1 && c.geometry.parameters.height === 0.05);
+    originalEyes.forEach(eye => head.remove(eye));
+
+    // Ojos nuevos, más grandes y amarillos
+    head.add(createCube(0.1, 0.1, 0.05, PALETTE.flowers[0], 0.1, 0.05, 0.2));
+    head.add(createCube(0.1, 0.1, 0.05, PALETTE.flowers[0], -0.1, 0.05, 0.2));
+    // Orejas puntiagudas
+    head.add(createCube(0.1, 0.3, 0.1, PALETTE.goblinSkin, 0.25, 0.1, 0));
+    head.add(createCube(0.1, 0.3, 0.1, PALETTE.goblinSkin, -0.25, 0.1, 0));
+    // Nariz
+    head.add(createCube(0.1, 0.1, 0.1, PALETTE.goblinSkin, 0, -0.1, 0.2));
+
+    // --- Equipamiento ---
+    // Zapatos
+    parts.legL.add(createCube(0.3, 0.2, 0.3, PALETTE.banditLeather, 0, -0.9, 0));
+    parts.legR.add(createCube(0.3, 0.2, 0.3, PALETTE.banditLeather, 0, -0.9, 0));
+    // Cinturón
+    grp.add(createCube(0.65, 0.15, 0.35, PALETTE.banditLeather, 0, 0.7, 0));
+    // Túnica/Falda andrajosa
+    grp.add(createCube(0.7, 0.4, 0.4, shirtColor, 0, 0.5, 0));
+
+
+    // Hombrera de armadura
+    parts.armL.add(createCube(0.3, 0.3, 0.3, PALETTE.soldierArmor, 0, 0.2, 0));
+    // Hacha simple en lugar de garrote
+    const weapon = new THREE.Group();
+    weapon.add(createCube(0.05, 0.7, 0.05, PALETTE.wood, 0, -0.6, 0.15)); // Mango
+    weapon.add(createCube(0.1, 0.3, 0.2, PALETTE.rock, 0, -0.9, 0.15)); // Cabeza del hacha
+    parts.armR.add(weapon);
+
     grp.position.set(x, 0, z); worldGroup.add(grp);
     enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'goblin', hp: 20, speed: 3, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createOgre(x, z) {
     const grp = createCharacterMesh(PALETTE.ogreClothes, PALETTE.ogreSkin, PALETTE.ogreClothes);
+    const parts = grp.userData.parts;
     grp.scale.set(1.5, 1.5, 1.5); // Ogres are bigger
-    grp.userData.parts.armR.add(createCube(0.1, 1.0, 0.1, 0x795548, 0, -0.8, 0.2)); // Bigger club
+
+    // Detalles: Cara y Taparrabos
+    parts.head.add(createCube(0.1, 0.1, 0.1, 0xffffff, -0.1, -0.2, 0.2)); // Colmillo
+    grp.add(createCube(0.7, 0.4, 0.4, PALETTE.banditLeather, 0, 0.5, 0)); // Taparrabos de cuero
+
+    // Garrote con pinchos
+    const club = new THREE.Group();
+    club.add(createCube(0.15, 1.0, 0.15, PALETTE.wood, 0, -0.8, 0.2)); // Mango
+    club.add(createCube(0.25, 0.4, 0.25, PALETTE.rock, 0, -1.3, 0.2)); // Cabeza del garrote
+    parts.armR.add(club);
+
     grp.position.set(x, 0, z); worldGroup.add(grp);
     enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'ogre', hp: 100, speed: 1.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createWerewolf(x, z) {
-    const grp = createCharacterMesh(PALETTE.werewolfFur, PALETTE.werewolfSkin, PALETTE.werewolfFur);
+    // Usamos piel para el torso y pantalones rotos
+    const grp = createCharacterMesh(PALETTE.werewolfSkin, PALETTE.werewolfSkin, PALETTE.civPants[0]);
+    const parts = grp.userData.parts;
+
+    // Detalles: Hocico, orejas y garras
+    parts.head.add(createCube(0.2, 0.2, 0.3, PALETTE.werewolfFur, 0, -0.1, 0.25)); // Hocico
+    parts.head.add(createCube(0.1, 0.2, 0.1, PALETTE.werewolfFur, 0.2, 0.25, 0)); // Oreja
+    parts.head.add(createCube(0.1, 0.2, 0.1, PALETTE.werewolfFur, -0.2, 0.25, 0)); // Oreja
+    parts.armL.add(createCube(0.25, 0.1, 0.25, PALETTE.werewolfFur, 0, 0.1, 0)); // Pelo en hombros
+    parts.armR.add(createCube(0.25, 0.1, 0.25, PALETTE.werewolfFur, 0, 0.1, 0)); // Pelo en hombros
+    parts.armL.add(createCube(0.05, 0.15, 0.05, 0xffffff, 0.08, -0.5, 0.08)); // Garra
+    parts.armR.add(createCube(0.05, 0.15, 0.05, 0xffffff, -0.08, -0.5, 0.08)); // Garra
+
     grp.position.set(x, 0, z); worldGroup.add(grp);
     enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'werewolf', hp: 80, speed: 5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createCrocodile(x, z) {
-    const grp = new THREE.Group(); grp.add(createCube(0.8, 0.4, 2.0, PALETTE.crocSkin, 0, 0.3, 0));
+    const grp = new THREE.Group();
+    const body = createCube(0.8, 0.4, 2.0, PALETTE.crocSkin, 0, 0.3, 0);
+    grp.add(body);
+    // Detalles: Dientes y crestas
+    body.add(createCube(0.1, 0.1, 0.1, 0xffffff, 0.2, -0.1, 0.9)); // Diente
+    body.add(createCube(0.1, 0.1, 0.1, 0xffffff, -0.2, -0.1, 0.9)); // Diente
+    body.add(createCube(0.2, 0.1, 0.2, PALETTE.crocDetail, 0, 0.25, 0.5)); // Cresta
+    body.add(createCube(0.2, 0.1, 0.2, PALETTE.crocDetail, 0, 0.25, 0)); // Cresta
+    body.add(createCube(0.2, 0.1, 0.2, PALETTE.crocDetail, 0, 0.25, -0.5)); // Cresta
+
     const tail = new THREE.Group(); tail.position.set(0, 0.3, -1); grp.add(tail); tail.add(createCube(0.4, 0.3, 1.5, PALETTE.crocSkin, 0, 0, -0.75));
     const l1 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, 0.5, 0.15, 0.8); grp.add(l1);
     const l2 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, -0.5, 0.15, 0.8); grp.add(l2);
     const l3 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, 0.5, 0.15, -0.8); grp.add(l3);
     const l4 = createCube(0.2, 0.3, 0.2, PALETTE.crocSkin, -0.5, 0.15, -0.8); grp.add(l4);
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: { tail, l1, l2, l3, l4 }, type: 'crocodile', hp: 120, speed: 1.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    enemies.push({ mesh: grp, parts: { body, tail, l1, l2, l3, l4 }, type: 'crocodile', hp: 120, speed: 1.5, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
 }
 
 function createPlant(x, z) {
     const grp = new THREE.Group(); grp.add(createCube(0.2, 1.5, 0.2, PALETTE.plantStem, 0, 0.75, 0));
     const head = new THREE.Group(); head.position.set(0, 1.5, 0);
-    head.add(createCube(0.8, 0.6, 0.8, PALETTE.plantHead, 0, 0, 0));
+    const mouth = createCube(0.8, 0.6, 0.8, PALETTE.plantHead, 0, 0, 0);
+    // Detalles: Dientes y hojas
+    mouth.add(createCube(0.1, 0.2, 0.1, 0xffffff, 0.2, -0.2, 0.35)); // Diente
+    mouth.add(createCube(0.1, 0.2, 0.1, 0xffffff, -0.2, -0.2, 0.35)); // Diente
+    grp.add(createCube(0.8, 0.1, 0.2, PALETTE.leaves, 0, 1, 0.2)); // Hoja
+    grp.add(createCube(0.2, 0.1, 0.8, PALETTE.leaves, 0.2, 0.7, 0)); // Hoja
+    head.add(mouth);
     grp.add(head);
     grp.position.set(x, 0, z); worldGroup.add(grp);
     enemies.push({ mesh: grp, parts: { head }, type: 'plant', hp: 150, speed: 0, attacking: false, cooldown: 0 });
