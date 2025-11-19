@@ -63,6 +63,7 @@ function init() {
     window.addEventListener('resize', onResize);
     window.addEventListener('keydown', e => handleKey(e, 1));
     window.addEventListener('keyup', e => handleKey(e, 0));
+    window.addEventListener('keydown', handleSystemKeys); // Add this for inventory toggle
     window.addEventListener('mousemove', e => {
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -74,6 +75,24 @@ function init() {
         }
     });
     window.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+function handleSystemKeys(e) {
+    if (e.key.toLowerCase() === 'i') {
+        e.preventDefault(); // Prevent default browser behavior
+        const inventoryScreen = document.getElementById('inventory-screen');
+        const isVisible = inventoryScreen.style.display === 'flex';
+
+        if (isVisible) {
+            inventoryScreen.style.display = 'none';
+            isRunning = true; // Resume game
+            animate(); // Restart animation loop
+        } else {
+            inventoryScreen.style.display = 'flex';
+            updateDetailedInventoryUI(); // Populate the inventory
+            isRunning = false; // Pause game
+        }
+    }
 }
 
 function checkPortals() {

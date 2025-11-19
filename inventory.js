@@ -55,3 +55,41 @@ function updateInventoryUI() {
 
     inventoryUI.appendChild(slotsContainer);
 }
+
+function updateDetailedInventoryUI() {
+    const inventoryGrid = document.getElementById('inventory-grid');
+    if (!inventoryGrid) return;
+
+    inventoryGrid.innerHTML = ''; // Clear previous content
+
+    // Define icons for items
+    const ITEM_ICONS = {
+        "goblin part": "icon-goblin-face",
+        "bandit part": "icon-goblin-face", // Placeholder, you can create more icons
+        "ogre part": "icon-goblin-face", // Placeholder
+        "werewolf part": "icon-goblin-face", // Placeholder
+        "Health Potion": "icon-potion",
+        "Monster Bone": "icon-bone",
+        "Herb": "icon-potion" // Placeholder
+    };
+
+    for (const item of inventory.items) {
+        const slot = document.createElement('div');
+        slot.className = 'inventory-slot-large';
+        slot.title = `${item.name} x${item.quantity}`;
+
+        const icon = document.createElement('div');
+        icon.className = 'item-icon';
+        // Assign a specific icon class or a default one
+        const iconClass = ITEM_ICONS[item.name] || 'icon-bone'; // Default to bone icon
+        icon.classList.add(iconClass);
+
+        const quantityLabel = document.createElement('span');
+        quantityLabel.className = 'item-quantity';
+        quantityLabel.innerText = item.quantity;
+
+        slot.appendChild(icon);
+        slot.appendChild(quantityLabel);
+        inventoryGrid.appendChild(slot);
+    }
+}
