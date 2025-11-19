@@ -105,12 +105,16 @@ body {
     right: 20px;
     width: 200px;
     background: rgba(20, 15, 10, 0.9);
-    padding: 15px;
+    padding: 10px;
     border: 2px solid #8d6e63;
     border-radius: 4px;
     color: #eee;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
-    display: none; /* Initially hidden */
+    display: block;
+    /* Always visible */
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 /* PANTALLAS */

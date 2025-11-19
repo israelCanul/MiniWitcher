@@ -10,6 +10,7 @@ window.startGame = function () {
 
     init();
     loadBiome(0, 0);
+    updateInventoryUI(); // Initial inventory render
     isRunning = true;
     animate();
 };
