@@ -99,7 +99,31 @@ function createGoblin(x, z) {
     parts.armR.add(weapon);
 
     grp.position.set(x, 0, z); worldGroup.add(grp);
-    enemies.push({ mesh: grp, parts: grp.userData.parts, type: 'goblin', hp: 20, speed: 3, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() });
+    const goblinData = { mesh: grp, parts: grp.userData.parts, type: 'goblin', hp: 20, speed: 3, attacking: false, cooldown: 0, state: 'idle', timer: 0, target: new THREE.Vector3() };
+    enemies.push(goblinData);
+    return goblinData; // Devolvemos los datos para poder añadirle un home
+}
+
+function createGoblinKing(x, z, portalData) {
+    // Creamos un goblin, pero lo eliminamos de la lista general de enemigos
+    // porque lo gestionaremos como el rey.
+    const kingData = createGoblin(x, z);
+    enemies.pop(); // Elimina el último goblin añadido, que es nuestro futuro rey.
+    const king = kingData.mesh;
+
+    king.scale.set(1.1, 1.1, 1.1); // Más grande que un goblin normal
+    kingData.hp = 80; // Mucha más vida
+    kingData.type = 'goblin_king';
+    kingData.portalData = portalData; // Guardamos la info del portal
+
+    // Corona de oro
+    const crown = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2;
+        crown.add(createCube(0.1, 0.2, 0.1, PALETTE.flowers[0], Math.cos(angle) * 0.2, 0.25, Math.sin(angle) * 0.2));
+    }
+    kingData.parts.head.add(crown);
+    enemies.push(kingData); // Volvemos a añadirlo a la lista, ya como rey.
 }
 
 function createOgre(x, z) {
@@ -178,6 +202,13 @@ function damageEntity(e, dmg) {
     e.hp -= dmg; createFloatText(e.mesh.position, "-" + dmg);
     e.mesh.traverse(o => { if (o.material && o.material.emissive) { o.material.emissive.setHex(0xff0000); setTimeout(() => o.material.emissive.setHex(0), 100); } });
     if (e.hp <= 0) {
+        // --- LÓGICA DE APARICIÓN DE PORTAL ---
+        if (e.type === 'goblin_king' && e.portalData) {
+            console.log(`Portal a ${e.portalData.name} ha sido desbloqueado!`);
+            activePortals.push(e.portalData);
+            createPortalVisual(e.portalData.x, e.portalData.z);
+        }
+
         // --- LOOT DROPS ---
         addGold(Math.floor(Math.random() * 5) + 1);
         if (Math.random() < 0.5) {
@@ -237,16 +268,39 @@ function updateEntities(dt, t) {
         if (e.hp > 0) {
             let move = false;
             if (e.type && e.type !== 'plant') {
-                const d = player.mesh.position.distanceTo(e.mesh.position);
-                // Si el bandido está inactivo, solo se activa si el jugador está muy cerca
-                if (e.state === 'idle' && d < 15) {
-                    e.state = 'chase'; // Cambia a modo persecución
-                }
+                const playerDist = player.mesh.position.distanceTo(e.mesh.position);
 
-                if (e.state === 'chase' && d < 25 && d > 1.5) {
-                    e.mesh.lookAt(player.mesh.position); e.mesh.translateZ(e.speed * dt); move = true;
-                    if (d < 2 && !e.attacking) { e.attacking = true; setTimeout(() => { damageEntity(player, 5); e.attacking = false; updateUI(); if (player.hp <= 0) handleDeath(); }, 500); }
-                } else if (d >= 25) { e.state = 'idle'; } // Vuelve a inactivo si el jugador se aleja
+                // Lógica de IA
+                if (e.state === 'idle') {
+                    if (e.home) { // Si tiene un hogar (es un goblin de reino)
+                        e.state = 'patrol';
+                        e.timer = 0;
+                    } else if (playerDist < 15) { // Si es un enemigo errante
+                        e.state = 'chase';
+                    }
+                } else if (e.state === 'patrol') {
+                    if (playerDist < 20) { e.state = 'chase'; } // Si ve al jugador, lo persigue
+                    else {
+                        e.timer -= dt;
+                        if (e.timer <= 0) { // Elige un nuevo punto de patrulla
+                            const patrolRadius = 15;
+                            const angle = Math.random() * Math.PI * 2;
+                            e.target.set(e.home.x + Math.cos(angle) * patrolRadius, 0, e.home.z + Math.sin(angle) * patrolRadius);
+                            e.timer = 5 + Math.random() * 5; // Patrulla por 5-10 segundos
+                        }
+                        if (e.mesh.position.distanceTo(e.target) > 1) {
+                            e.mesh.lookAt(e.target); e.mesh.translateZ(e.speed * dt * 0.5); move = true;
+                        }
+                    }
+                }
+                if (e.state === 'chase') {
+                    if (playerDist < 25 && playerDist > 1.5) {
+                        e.mesh.lookAt(player.mesh.position); e.mesh.translateZ(e.speed * dt); move = true;
+                        if (playerDist < 2 && !e.attacking) { e.attacking = true; setTimeout(() => { damageEntity(player, 5); e.attacking = false; updateUI(); if (player.hp <= 0) handleDeath(); }, 500); }
+                    } else if (playerDist >= 25) {
+                        e.state = e.home ? 'patrol' : 'idle'; // Si tiene hogar vuelve a patrullar, si no, se queda quieto
+                    }
+                }
             }
             if (e.type === 'crocodile' || e.type === 'plant') animateMonster(e, move, t);
             else animateChar(e, move, t);

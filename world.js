@@ -85,6 +85,34 @@ function createBanditCamp(x, z) {
     banditCamps.push({ x, z, spawned: false, group: grp, huts: huts });
 }
 
+function createGoblinKingdom(x, z, portalData) {
+    const kingdomGroup = new THREE.Group();
+    kingdomGroup.position.set(x, 0.1, z);
+
+    // Trono del Rey
+    const throne = new THREE.Group();
+    throne.add(createCube(1.5, 0.5, 1.5, PALETTE.rock, 0, 0.25, 0)); // Base
+    throne.add(createCube(0.4, 2.0, 0.4, PALETTE.rock, 0.6, 1.0, 0.6)); // Pilar
+    throne.add(createCube(0.4, 2.0, 0.4, PALETTE.rock, -0.6, 1.0, 0.6)); // Pilar
+    kingdomGroup.add(throne);
+
+    // Generar Rey Goblin en el trono
+    createGoblinKing(x, z, portalData); // Pasamos la info del portal al rey
+
+    // Generar chozas y goblins guardianes
+    const numHuts = 4 + Math.floor(Math.random() * 3); // 4 a 6 chozas
+    const radius = 12;
+    for (let i = 0; i < numHuts; i++) {
+        const angle = (i / numHuts) * Math.PI * 2;
+        const hutX = Math.cos(angle) * radius;
+        const hutZ = Math.sin(angle) * radius;
+        kingdomGroup.add(createBanditHut(hutX, hutZ, -angle - Math.PI / 2));
+        const goblin = createGoblin(x + hutX, z + hutZ);
+        goblin.home = { x: x, z: z }; // Asignar el centro del reino como su hogar
+    }
+    worldGroup.add(kingdomGroup);
+}
+
 function createCave(x, z) {
     const grp = new THREE.Group(); grp.position.set(x, 0, z);
     const m = new THREE.Mesh(new THREE.DodecahedronGeometry(2.5, 0), new THREE.MeshStandardMaterial({ color: 0x212121 }));
@@ -125,6 +153,7 @@ function createPortalVisual(x, z) {
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, 2, z);
     const glow = new THREE.PointLight(0xff0000, 1, 20);
+    glow.castShadow = false;
     glow.position.set(x, 2, z);
     worldGroup.add(mesh);
     worldGroup.add(glow);
@@ -267,11 +296,9 @@ function generateTerrain(type) {
 
 function spawnRandomEnemies(n) {
     for (let i = 0; i < n; i++) {
-        let x = (Math.random() - 0.5) * 150, z = (Math.random() - 0.5) * 150;
-        if (Math.abs(x) > 20 || Math.abs(z) > 20) {
-            if (Math.random() < 0.5) { createGoblin(x, z); } else {
-                createOgre(x, z);
-            }
+        const x = (Math.random() - 0.5) * 150, z = (Math.random() - 0.5) * 150;
+        if (Math.hypot(x, z) > 40) { // No generar enemigos cerca del centro
+            createOgre(x, z); // Ahora solo genera ogros aleatoriamente
         }
     }
 }
@@ -280,6 +307,7 @@ function spawnStaticSwampPlants() { swampCaves.forEach(c => createPlant(c.x + 5,
 
 function loadBiome(bx, by) {
     worldGroup.clear();
+    goblinKingdoms = [];
     banditCamps.forEach(c => c.group.children.forEach(child => { if (child.isPointLight) c.group.remove(child) }));
     banditCamps = [];
     solidColliders = [];
@@ -290,6 +318,7 @@ function loadBiome(bx, by) {
     swampCaves = [];
     villageCenters = [];
     activePortals = [];
+    let portalLocations = [];
 
     let key = bx + "," + by;
     let data = BIOME_DATA[key];
@@ -306,15 +335,15 @@ function loadBiome(bx, by) {
 
     const limit = SCENARIO_SIZE / 2 - 5;
     if (bx === 0 && by === 0) {
-        activePortals.push({ x: 0, z: -limit, target: { x: 0, y: -1 }, name: "Norte" });
-        activePortals.push({ x: 0, z: limit, target: { x: 0, y: 1 }, name: "Sur" });
-        activePortals.push({ x: limit, z: 0, target: { x: 1, y: 0 }, name: "Este" });
-        activePortals.push({ x: -limit, z: 0, target: { x: -1, y: 0 }, name: "Oeste" });
+        portalLocations.push({ x: 0, z: -limit, target: { x: 0, y: -1 }, name: "Norte" });
+        portalLocations.push({ x: 0, z: limit, target: { x: 0, y: 1 }, name: "Sur" });
+        portalLocations.push({ x: limit, z: 0, target: { x: 1, y: 0 }, name: "Este" });
+        portalLocations.push({ x: -limit, z: 0, target: { x: -1, y: 0 }, name: "Oeste" });
     } else {
-        if (by === -1) activePortals.push({ x: 0, z: limit, target: { x: 0, y: 0 }, name: "Regreso" });
-        if (by === 1) activePortals.push({ x: 0, z: -limit, target: { x: 0, y: 0 }, name: "Regreso" });
-        if (bx === 1) activePortals.push({ x: -limit, z: 0, target: { x: 0, y: 0 }, name: "Regreso" });
-        if (bx === -1) activePortals.push({ x: limit, z: 0, target: { x: 0, y: 0 }, name: "Regreso" });
+        if (by === -1) portalLocations.push({ x: 0, z: limit, target: { x: 0, y: 0 }, name: "Regreso" });
+        if (by === 1) portalLocations.push({ x: 0, z: -limit, target: { x: 0, y: 0 }, name: "Regreso" });
+        if (bx === 1) portalLocations.push({ x: -limit, z: 0, target: { x: 0, y: 0 }, name: "Regreso" });
+        if (bx === -1) portalLocations.push({ x: limit, z: 0, target: { x: 0, y: 0 }, name: "Regreso" });
     }
 
     generateTerrain(data.type);
@@ -328,56 +357,45 @@ function loadBiome(bx, by) {
             vx = (Math.random() - 0.5) * (SCENARIO_SIZE * 0.6);
             vz = (Math.random() - 0.5) * (SCENARIO_SIZE * 0.6);
             safe = true;
-            if (Math.hypot(vx, vz) < 40) safe = false;
+            if (Math.hypot(vx, vz) < 50) safe = false; // Un poco más lejos del centro
             for (let v of villageCenters) if (Math.hypot(vx - v.x, vz - v.z) < 60) safe = false;
             attempts++;
         }
         if (safe) {
-            spawnVillage(vx, vz);
+            // Aseguramos que la aldea no se salga por los bordes
+            const clampRange = SCENARIO_SIZE / 2 - 25; // 25 es el radio aprox. de una aldea
+            spawnVillage(THREE.MathUtils.clamp(vx, -clampRange, clampRange), THREE.MathUtils.clamp(vz, -clampRange, clampRange));
         }
     }
 
-    if (data.type === 'forest') {
-        let numCamps = 4 + Math.floor(Math.random() * 3);
-        for (let i = 0; i < numCamps; i++) {
-            let safe = false;
-            let campX, campZ;
-            let attempts = 0;
-            while (!safe && attempts < 100) {
-                let angle = Math.random() * Math.PI * 2;
-                let radius = 40 + Math.random() * 50; // 40 a 90 unidades del centro
-                campX = Math.cos(angle) * radius;
-                campZ = Math.sin(angle) * radius;
-                safe = true;
-                // Comprobar distancia a todas las aldeas
-                for (let v of villageCenters) {
-                    if (Math.hypot(campX - v.x, campZ - v.z) < 60) {
-                        safe = false;
-                        break;
-                    }
-                }
-                // Comprobar distancia a otros campamentos
-                if (safe) {
-                    for (let c of banditCamps) {
-                        if (Math.hypot(campX - c.x, campZ - c.z) < 60) {
-                            safe = false;
-                            break;
-                        }
-                    }
-                }
-                attempts++;
-            }
-            if (safe) createBanditCamp(campX, campZ);
+    // --- Generar Reinos Goblin en las ubicaciones de los portales ---
+    portalLocations.forEach(portal => {
+        // Los portales de regreso siempre están activos y no tienen rey
+        if (portal.name === 'Regreso') {
+            activePortals.push(portal);
+        } else {
+            // Movemos el reino hacia adentro para que no se salga del mapa
+            const kingdomOffset = 15; // Radio aproximado del reino
+            createGoblinKingdom(portal.x * (1 - kingdomOffset / Math.abs(portal.x || 1)), portal.z * (1 - kingdomOffset / Math.abs(portal.z || 1)), portal);
         }
+    });
+
+    if (data.type === 'forest') {
+        // --- Generar campamentos de bandidos en las esquinas ---
+        const cornerOffset = SCENARIO_SIZE / 2 - 20; // A 20 unidades del borde
+        createBanditCamp(cornerOffset, cornerOffset); // Sureste
+        createBanditCamp(cornerOffset, -cornerOffset); // Noreste
+        createBanditCamp(-cornerOffset, cornerOffset); // Suroeste
+        createBanditCamp(-cornerOffset, -cornerOffset); // Noroeste
     }
 
     if (data.type === 'swamp') {
         swampCaves.push({ x: 40, z: 40, cooldown: 0 }, { x: -40, z: -30, cooldown: 0 }, { x: 50, z: -50, cooldown: 0 });
         swampCaves.forEach(c => createCave(c.x, c.z));
         spawnStaticSwampPlants();
-    } else {
-        spawnRandomEnemies(20);
     }
+
+    if (data.type !== 'swamp') spawnRandomEnemies(20);
 
     activePortals.forEach(p => createPortalVisual(p.x, p.z));
 }

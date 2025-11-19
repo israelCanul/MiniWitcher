@@ -112,7 +112,8 @@
                 { func: createOgre, type: 'Ogre' },
                 { func: createWerewolf, type: 'Werewolf' },
                 { func: createCrocodile, type: 'Crocodile' },
-                { func: createPlant, type: 'Plant' }
+                { func: createPlant, type: 'Plant' },
+                { func: createGoblinKing, type: 'GoblinKing' }
             ];
 
             // Posicionar enemigos en una fila
@@ -123,6 +124,9 @@
                 if (spawner.type === 'Bandit') {
                     // createEnemy tiene una firma diferente
                     createEnemy(xPosition, 0, 'Bandit');
+                } else if (spawner.type === 'GoblinKing') {
+                    // El rey necesita un tercer argumento, aunque sea nulo para el visor
+                    spawner.func(xPosition, 0, null);
                 } else {
                     spawner.func(xPosition, 0);
                 }
