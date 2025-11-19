@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Depurador de Entidades - Monster Hunter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: white;
+            font-family: 'Courier New', monospace;
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+
+    <div id="info">
+        <h2>Visor de Enemigos</h2>
+        <p>Usa el mouse para rotar (clic izquierdo), mover (clic derecho) y hacer zoom (rueda)</p>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="entities.js"></script>
+
+    <script>
+        // --- SETUP BÁSICO DE LA ESCENA ---
+        let controls;
+        // const keays = { w: false, a: false, s: false, d: false };
+
+        // Las funciones de `entities.js` esperan que estas variables globales existan.
+        // Las definimos aquí para que no entren en conflicto con `config.js`.
+        window.addEventListener('keydown', (e) => {
+            // Prevenir que WASD hagan scroll en la página
+            if (['w', 'a', 's', 'd'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+            if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false;
+        });
+
+        function init() {
+            // Limpiamos las variables globales para este entorno de depuración
+            enemies = [];
+            worldGroup = new THREE.Group();
+            particles = []; // Evita errores si alguna función la usa
+
+            // Escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x455a64);
+            scene.fog = new THREE.Fog(0x455a64, 50, 200);
+
+            // Cámara
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 40);
+
+            // Clock
+            clock = new THREE.Clock();
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Controles de cámara
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 5, 0);
+            controls.update();
+
+            // Luces
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(30, 50, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // Suelo
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshStandardMaterial({ color: 0x33691e })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // --- GENERAR ENEMIGOS ---
+            scene.add(worldGroup);
+
+            // Lista de funciones para crear enemigos
+            const enemySpawners = [
+                { func: createEnemy, type: 'Bandit' },
+                { func: createGoblin, type: 'Goblin' },
+                { func: createOgre, type: 'Ogre' },
+                { func: createWerewolf, type: 'Werewolf' },
+                { func: createCrocodile, type: 'Crocodile' },
+                { func: createPlant, type: 'Plant' }
+            ];
+
+            // Posicionar enemigos en una fila
+            enemySpawners.forEach((spawner, index) => {
+                const xPosition = (index - (enemySpawners.length - 1) / 2) * 15;
+                // Llamamos a la función para crear el enemigo en la posición deseada.
+                // El `enemies.js` lo añade a `worldGroup` automáticamente.
+                if (spawner.type === 'Bandit') {
+                    // createEnemy tiene una firma diferente
+                    createEnemy(xPosition, 0, 'Bandit');
+                } else {
+                    spawner.func(xPosition, 0);
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Animamos los enemigos para que se vean sus movimientos
+            enemies.forEach(e => animateChar(e, true, clock.getElapsedTime()));
+
+            const moveSpeed = 20 * delta; // Unidades por segundo
+
+            // Lógica de movimiento de cámara con WASD
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, camera.up);
+
+            if (keys.w) {
+                camera.position.addScaledVector(forward, moveSpeed);
+            }
+            if (keys.s) {
+                camera.position.addScaledVector(forward, -moveSpeed);
+            }
+            if (keys.a) {
+                camera.position.addScaledVector(right, -moveSpeed);
+            }
+            if (keys.d) {
+                camera.position.addScaledVector(right, moveSpeed);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+        animate();
+    </script>
+</body>
+
+</html>
