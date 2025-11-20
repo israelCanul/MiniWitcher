@@ -117,7 +117,7 @@ class Enemy {
         this.cooldown = this.attackSpeed;
         setTimeout(() => {
             if (this.hp > 0 && player.mesh.position.distanceTo(this.mesh.position) < this.attackRange) {
-                damageEntity(player, this.attackDamage);
+                player.damage(this.attackDamage);
             }
             this.attacking = false;
         }, 500);

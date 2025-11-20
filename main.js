@@ -16,7 +16,7 @@ window.startGame = function () {
 };
 
 window.respawnPlayer = function () {
-    player.hp = 100;
+    player.hp = player.maxHp;
     player.mesh.position.set(0, 0, 0);
     loadBiome(0, 0);
     document.getElementById('death-screen').style.display = 'none';
@@ -57,7 +57,7 @@ function init() {
     worldGroup = new THREE.Group();
     scene.add(worldGroup);
 
-    createPlayer();
+    player = new Player(); // Se crea la instancia del jugador
     clock = new THREE.Clock();
 
     window.addEventListener('resize', onResize);
@@ -70,8 +70,8 @@ function init() {
     });
     window.addEventListener('mousedown', e => {
         if (player.hp > 0) {
-            if (e.button === 0) attack('sword');
-            if (e.button === 2) attack('igni');
+            if (e.button === 0) player.attack('sword');
+            if (e.button === 2) player.attack('igni');
         }
     });
     window.addEventListener('contextmenu', e => e.preventDefault());
@@ -113,40 +113,6 @@ function checkPortals() {
     }
 }
 
-function checkCol(dx, dz) {
-    const np = player.mesh.position.clone().add(new THREE.Vector3(dx, 0, dz));
-    const box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(np.x, 1, np.z), new THREE.Vector3(0.5, 5, 0.5));
-    for (let c of solidColliders) if (box.intersectsBox(c)) return true;
-    return false;
-}
-
-function attack(type) {
-    if (player.hp <= 0) return;
-    if (type === 'sword' && player.stam >= 15 && !player.attacking) {
-        player.stam -= 15; player.attacking = true; updateUI();
-        const arm = player.parts.armR; let p = 0;
-        const iv = setInterval(() => { p += 0.2; arm.rotation.x = -Math.PI / 2 * Math.sin(p * Math.PI); if (p >= 1) { clearInterval(iv); arm.rotation.x = 0; player.attacking = false; } }, 16);
-        createFX(player.mesh.position, 0xffffff, 'slash');
-        checkHit(5, 2.0, 25);
-    }
-    if (type === 'igni' && player.stam >= 30 && !player.attacking) {
-        player.stam -= 30; player.attacking = true; updateUI();
-        player.parts.armL.rotation.x = -3; setTimeout(() => { player.parts.armL.rotation.x = 0; player.attacking = false }, 500);
-        createFX(player.mesh.position, 0xff6d00, 'exp');
-        checkHit(8, 6.0, 40);
-    }
-}
-
-function checkHit(r, a, dmg) {
-    const pDir = new THREE.Vector3(); player.mesh.getWorldDirection(pDir);
-    enemies.forEach((e, idx) => {
-        const dir = new THREE.Vector3().subVectors(e.mesh.position, player.mesh.position);
-        if (dir.length() < r && pDir.angleTo(dir) < a) {
-            damageEntity(e, dmg); // Llamamos a la función despachadora
-        }
-    });
-}
-
 function createFX(pos, col, type) {
     const geo = type === 'slash' ? new THREE.PlaneGeometry(5, 5) : new THREE.SphereGeometry(3, 8, 8);
     const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
@@ -178,9 +144,8 @@ function updateProjectiles(dt) {
 
         // Comprobar colisión con el jugador
         if (p.mesh.position.distanceTo(player.mesh.position) < 1.5) {
-            damageEntity(player, p.damage, true); // Añadimos un flag para identificar al jugador
-            updateUI();
-            if (player.hp <= 0) handleDeath(); // Comprobar si el jugador ha muerto
+            player.damage(p.damage); // Llama directamente al método del jugador
+            if (player.hp <= 0) player.die(); // Comprobar si el jugador ha muerto
             p.life = 0; // Marcar para eliminar
         }
 
@@ -235,30 +200,20 @@ function animate() {
     checkCaveSpawns(dt);
     updateProjectiles(dt);
 
-    let dx = 0, dz = 0;
-    if (keys.w) dz -= 1; if (keys.s) dz += 1; if (keys.a) dx -= 1; if (keys.d) dx += 1;
-    let moving = (dx !== 0 || dz !== 0);
-    if (moving) {
-        if (dx !== 0 && dz !== 0) { dx *= 0.707; dz *= 0.707; }
-        const s = 10 * dt;
-        if (!checkCol(dx * s, 0)) player.mesh.position.x += dx * s;
-        if (!checkCol(0, dz * s)) player.mesh.position.z += dz * s;
-    }
-
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObject(mousePlane);
-    if (hits.length > 0) player.mesh.lookAt(hits[0].point.x, player.mesh.position.y, hits[0].point.z);
+    const lookAtPoint = hits.length > 0 ? hits[0].point : null;
+
+    // La actualización del jugador ahora está encapsulada
+    player.update(dt, keys, lookAtPoint);
 
     camera.position.x = player.mesh.position.x;
     camera.position.z = player.mesh.position.z + 30;
     camera.lookAt(player.mesh.position);
 
-    animateChar(player, moving, time);
     updateEntities(dt, time);
     updateParticles(dt);
     drawMinimap();
-
-    if (player.stam < 100) { player.stam += 10 * dt; updateUI(); }
     renderer.render(scene, camera);
 }
 

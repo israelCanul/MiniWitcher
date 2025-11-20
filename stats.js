@@ -1,3 +1,24 @@
+const PLAYER_STATS = {
+    maxHp: 100,
+    maxStam: 100,
+    speed: 10,
+    stamRegen: 10, // Puntos por segundo
+    attacks: {
+        sword: {
+            damage: 25,
+            stamCost: 15,
+            range: 5.0,
+            angle: 2.0 // Radianes
+        },
+        igni: {
+            damage: 40,
+            stamCost: 30,
+            range: 8.0,
+            angle: 6.0 // Radianes (casi un círculo completo)
+        }
+    }
+};
+
 const ENEMY_STATS = {
     bandit: {
         hp: 30,

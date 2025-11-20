@@ -1,13 +1,3 @@
-// --- 3. FACTORY DE PERSONAJES Y ENTIDADES ---
-
-function createPlayer() {
-    player = { mesh: createCharacterMesh(PALETTE.armor, PALETTE.skin, PALETTE.banditPants), hp: 100, maxHp: 100, stam: 100, attacking: false };
-    player.mesh.userData.parts.head.add(createCube(0.45, 0.1, 0.45, PALETTE.hair, 0, 0.25, 0));
-    player.mesh.userData.parts.armR.add(createCube(0.08, 1.4, 0.05, 0xffffff, 0, -1.0, 0.15));
-    player.parts = player.mesh.userData.parts;
-    scene.add(player.mesh);
-}
-
 function spawnCitizen(x, z) {
     const shirt = PALETTE.civShirts[Math.floor(Math.random() * PALETTE.civShirts.length)];
     const grp = createCharacterMesh(shirt, PALETTE.skin, PALETTE.civPants[0]);
@@ -85,10 +75,9 @@ function animateChar(c, move, t) {
         // Estado de reposo para todos los personajes
         if (c.type === 'goblin_king' && c.attackPhase !== 'spinning') {
             c.parts.armR.rotation.x = 0; // Asegurarse de que la espada del rey vuelva a su sitio
-        }
-        if (c.parts.legL) c.parts.legL.rotation.x = 0; if (c.parts.legR) c.parts.legR.rotation.x = 0;
+        } else if (c.parts.legL) c.parts.legL.rotation.x = 0; if (c.parts.legR) c.parts.legR.rotation.x = 0;
         if (c.parts.armL) c.parts.armL.rotation.x = 0;
-        if (c.parts.armR && c !== player) c.parts.armR.rotation.x = 0;
+        if (c.parts.armR) c.parts.armR.rotation.x = 0;
     }
 }
 
@@ -139,28 +128,6 @@ function createCircleAttackFX(position, range) {
 
     worldGroup.add(circleFX);
     return circleFX;
-}
-
-function damageEntity(e, dmg, isPlayer = false) {
-    console.log(e, dmg, isPlayer);
-
-    if (isPlayer) {
-        player.hp -= dmg;
-        createFloatText(player.mesh.position, "-" + dmg);
-        player.mesh.traverse(o => {
-            if (o.isMesh && o.material.emissive) {
-                o.material.emissive.setHex(0xff0000);
-                setTimeout(() => o.material.emissive.setHex(0), 100);
-            }
-        });
-    } else {
-        // Si no es el jugador, llamamos al método .damage() de la clase del enemigo.
-        if (typeof e.damage === 'function') {
-            e.damage(dmg);
-        } else {
-            console.error("The entity does not have a damage method", e);
-        }
-    }
 }
 
 function updateEntities(dt, t) {

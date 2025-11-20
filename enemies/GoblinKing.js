@@ -50,7 +50,7 @@ class GoblinKing extends Enemy {
             this.startSpinRotation = this.mesh.rotation.y; // Guardar rotación inicial
 
             if (this.hp > 0 && player.mesh.position.distanceTo(this.mesh.position) < this.attackRange) {
-                damageEntity(player, this.attackDamage, true);
+                player.damage(this.attackDamage);
             }
 
             setTimeout(() => {
