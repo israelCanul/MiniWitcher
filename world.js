@@ -25,7 +25,7 @@ function createHouse(x, z) {
 }
 
 function createParcel(x, z) {
-    const grp = new THREE.Group(); grp.position.set(x, 0.05, z);
+    const grp = new THREE.Group(); grp.position.set(x, 0.11, z); // Elevado ligeramente para evitar Z-fighting
     const dirt = new THREE.Mesh(new THREE.BoxGeometry(6, 0.1, 6), new THREE.MeshStandardMaterial({ color: PALETTE.crop }));
     grp.add(dirt);
     for (let i = -2; i <= 2; i += 1.5) for (let j = -2; j <= 2; j += 1.5) {
@@ -86,6 +86,7 @@ function createBanditCamp(x, z) {
 }
 
 function createGoblinKingdom(x, z, portalData) {
+    goblinKingdoms.push({ x, z, radius: 15 }); // Registrar el reino y su radio
     const kingdomGroup = new THREE.Group();
     kingdomGroup.position.set(x, 0.1, z);
 
@@ -99,11 +100,14 @@ function createGoblinKingdom(x, z, portalData) {
     // Generar Rey Goblin en el trono
     new GoblinKing(x, z, portalData);
 
-    // Generar chozas y goblins guardianes
-    const numHuts = 4 + Math.floor(Math.random() * 3); // 4 a 6 chozas
-    const radius = 12;
-    for (let i = 0; i < numHuts; i++) {
-        const angle = (i / numHuts) * Math.PI * 2;
+    // Generar 10 chozas y goblins guardianes en dos círculos
+    const hutsPerCircle = 5;
+    const radii = [7, 12]; // Radios para los dos círculos de chozas
+
+    for (let i = 0; i < hutsPerCircle; i++) {
+        // Círculo interior
+        let angle = (i / hutsPerCircle) * Math.PI * 2;
+        let radius = radii[0];
         const hutX = Math.cos(angle) * radius;
         const hutZ = Math.sin(angle) * radius;
         kingdomGroup.add(createGoblinHut(hutX, hutZ, -angle - Math.PI / 2));
@@ -111,6 +115,17 @@ function createGoblinKingdom(x, z, portalData) {
         goblin.home = { x: x, z: z }; // Asignar el centro del reino como su hogar
     }
     worldGroup.add(kingdomGroup);
+
+    for (let i = 0; i < hutsPerCircle; i++) {
+        // Círculo exterior (desfasado)
+        let angle = ((i + 0.5) / hutsPerCircle) * Math.PI * 2;
+        let radius = radii[1];
+        const hutX = Math.cos(angle) * radius;
+        const hutZ = Math.sin(angle) * radius;
+        kingdomGroup.add(createGoblinHut(hutX, hutZ, -angle - Math.PI / 2));
+        const goblin = new Goblin(x + hutX, z + hutZ);
+        goblin.home = { x: x, z: z };
+    }
 }
 
 function createCave(x, z) {
@@ -279,7 +294,7 @@ function generateTerrain(type) {
             else mWater.setMatrixAt(idx.w++, dum.matrix);
             addCollider(cell.x, cell.z, 2);
         } else {
-            let h = Math.random() * 0.15;
+            let h = 0; // Eliminamos la altura aleatoria para tener un suelo plano
             dum.position.set(cell.x, h, cell.z); dum.updateMatrix();
             if (type === 'snow') mSnow.setMatrixAt(idx.s++, dum.matrix);
             else if (type === 'swamp') mSwampG.setMatrixAt(idx.sg++, dum.matrix);
@@ -291,8 +306,9 @@ function generateTerrain(type) {
             }
 
             if (cell.prop) {
-                let inVillage = villageCenters.some(v => Math.hypot(cell.x - v.x, cell.z - v.z) < 18);
-                if (!inVillage) {
+                const inVillage = villageCenters.some(v => Math.hypot(cell.x - v.x, cell.z - v.z) < 18);
+                const inKingdom = goblinKingdoms.some(k => Math.hypot(cell.x - k.x, cell.z - k.z) < k.radius);
+                if (!inVillage && !inKingdom) {
                     if (cell.prop === 'tree') {
                         placeProp(cell.x, cell.z, h, mTreeT, mTreeL, idx.t++, false);
                     } else if (cell.prop === 'pine') {
@@ -378,6 +394,23 @@ function loadBiome(bx, by) {
         if (bx === -1) portalLocations.push({ x: limit, z: 0, target: { x: 0, y: 0 }, name: "Regreso" });
     }
 
+    // --- Generar Reino Goblin en el punto de inicio (solo en el mapa central) ---
+    if (bx === 0 && by === 0) {
+        createGoblinKingdom(0, 0, null); // El 'null' es porque este reino no guarda un portal.
+    }
+
+    // --- Generar Reinos Goblin en las ubicaciones de los portales ---
+    portalLocations.forEach(portal => {
+        // Los portales de regreso siempre están activos y no tienen rey
+        if (portal.name === 'Regreso') {
+            activePortals.push(portal);
+        } else {
+            // Movemos el reino hacia adentro para que no se salga del mapa
+            const kingdomOffset = 15; // Radio aproximado del reino
+            createGoblinKingdom(portal.x * (1 - kingdomOffset / Math.abs(portal.x || 1)), portal.z * (1 - kingdomOffset / Math.abs(portal.z || 1)), portal);
+        }
+    });
+
     generateTerrain(data.type);
 
     let numVillages = 2 + Math.floor(Math.random() * 2);
@@ -399,23 +432,6 @@ function loadBiome(bx, by) {
             spawnVillage(THREE.MathUtils.clamp(vx, -clampRange, clampRange), THREE.MathUtils.clamp(vz, -clampRange, clampRange));
         }
     }
-
-    // --- Generar Reino Goblin en el punto de inicio (solo en el mapa central) ---
-    if (bx === 0 && by === 0) {
-        createGoblinKingdom(0, 0, null); // El 'null' es porque este reino no guarda un portal.
-    }
-
-    // --- Generar Reinos Goblin en las ubicaciones de los portales ---
-    portalLocations.forEach(portal => {
-        // Los portales de regreso siempre están activos y no tienen rey
-        if (portal.name === 'Regreso') {
-            activePortals.push(portal);
-        } else {
-            // Movemos el reino hacia adentro para que no se salga del mapa
-            const kingdomOffset = 15; // Radio aproximado del reino
-            createGoblinKingdom(portal.x * (1 - kingdomOffset / Math.abs(portal.x || 1)), portal.z * (1 - kingdomOffset / Math.abs(portal.z || 1)), portal);
-        }
-    });
 
     if (data.type === 'forest') {
         // --- Generar campamentos de bandidos en las esquinas ---
