@@ -97,7 +97,7 @@ function createGoblinKingdom(x, z, portalData) {
     kingdomGroup.add(throne);
 
     // Generar Rey Goblin en el trono
-    createGoblinKing(x, z, portalData); // Pasamos la info del portal al rey
+    new GoblinKing(x, z, portalData);
 
     // Generar chozas y goblins guardianes
     const numHuts = 4 + Math.floor(Math.random() * 3); // 4 a 6 chozas
@@ -107,7 +107,7 @@ function createGoblinKingdom(x, z, portalData) {
         const hutX = Math.cos(angle) * radius;
         const hutZ = Math.sin(angle) * radius;
         kingdomGroup.add(createGoblinHut(hutX, hutZ, -angle - Math.PI / 2));
-        const goblin = createGoblin(x + hutX, z + hutZ);
+        const goblin = new Goblin(x + hutX, z + hutZ);
         goblin.home = { x: x, z: z }; // Asignar el centro del reino como su hogar
     }
     worldGroup.add(kingdomGroup);
@@ -329,14 +329,13 @@ function generateTerrain(type) {
 
 function spawnRandomEnemies(n) {
     for (let i = 0; i < n; i++) {
-        const x = (Math.random() - 0.5) * 150, z = (Math.random() - 0.5) * 150;
-        if (Math.hypot(x, z) > 40) { // No generar enemigos cerca del centro
-            createOgre(x, z); // Ahora solo genera ogros aleatoriamente
-        }
+        const x = (Math.random() - 0.5) * 150,
+            z = (Math.random() - 0.5) * 150;
+        if (Math.hypot(x, z) > 40) new Ogre(x, z);
     }
 }
 
-function spawnStaticSwampPlants() { swampCaves.forEach(c => createPlant(c.x + 5, c.z)); }
+function spawnStaticSwampPlants() { swampCaves.forEach(c => new Plant(c.x + 5, c.z)); }
 
 function loadBiome(bx, by) {
     worldGroup.clear();
@@ -401,6 +400,11 @@ function loadBiome(bx, by) {
         }
     }
 
+    // --- Generar Reino Goblin en el punto de inicio (solo en el mapa central) ---
+    if (bx === 0 && by === 0) {
+        createGoblinKingdom(0, 0, null); // El 'null' es porque este reino no guarda un portal.
+    }
+
     // --- Generar Reinos Goblin en las ubicaciones de los portales ---
     portalLocations.forEach(portal => {
         // Los portales de regreso siempre están activos y no tienen rey
@@ -440,8 +444,8 @@ function checkCaveSpawns(dt) {
     swampCaves.forEach(c => {
         if (c.cooldown > 0) { c.cooldown -= dt; return; }
         if (player.mesh.position.distanceTo(new THREE.Vector3(c.x, 0, c.z)) < spawnDist) {
-            if (Math.random() < wChance) createWerewolf(c.x + (Math.random() - .5) * 5, c.z + (Math.random() - .5) * 5);
-            if (Math.random() < cChance) createCrocodile(c.x + (Math.random() - .5) * 5, c.z + (Math.random() - .5) * 5);
+            if (Math.random() < wChance) new Werewolf(c.x + (Math.random() - .5) * 5, c.z + (Math.random() - .5) * 5);
+            if (Math.random() < cChance) new Crocodile(c.x + (Math.random() - .5) * 5, c.z + (Math.random() - .5) * 5);
             c.cooldown = 15;
         }
     });

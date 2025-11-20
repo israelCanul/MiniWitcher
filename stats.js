@@ -14,7 +14,7 @@ const ENEMY_STATS = {
     goblin: {
         hp: 20,
         speed: 3,
-        damage: 8, // Daño de flecha
+        damage: 0.1, // Daño de flecha
         attackSpeed: 3.0, // segundos
         projectileLife: 3, // segundos de vida de la flecha, controla el alcance
         attackRange: 18, // Distancia ideal de disparo
@@ -27,9 +27,11 @@ const ENEMY_STATS = {
     goblin_king: {
         hp: 120,
         speed: 2.8,
-        damage: 100, // Daño de espada
-        attackSpeed: 2.5, // segundos
-        attackRange: 2.5,
+        damage: 1, // Daño de espada
+        attackSpeed: 2.0, // segundos
+        attackRange: 4.0, // Aumentado para el ataque de cono
+        chargeTime: 1, // segundos de carga del ataque
+        spinTime: 0.3, // segundos que dura el giro
         aggroRange: 25,
         chaseRange: 40,
         goldDrop: { min: 50, max: 100 },

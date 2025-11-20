@@ -142,7 +142,7 @@ function checkHit(r, a, dmg) {
     enemies.forEach((e, idx) => {
         const dir = new THREE.Vector3().subVectors(e.mesh.position, player.mesh.position);
         if (dir.length() < r && pDir.angleTo(dir) < a) {
-            damageEntity(e, dmg);
+            damageEntity(e, dmg); // Llamamos a la función despachadora
         }
     });
 }
@@ -178,8 +178,8 @@ function updateProjectiles(dt) {
 
         // Comprobar colisión con el jugador
         if (p.mesh.position.distanceTo(player.mesh.position) < 1.5) {
-            damageEntity(player, p.damage);
-            updateUI(); // <-- ESTA LÍNEA FALTABA
+            damageEntity(player, p.damage, true); // Añadimos un flag para identificar al jugador
+            updateUI();
             if (player.hp <= 0) handleDeath(); // Comprobar si el jugador ha muerto
             p.life = 0; // Marcar para eliminar
         }

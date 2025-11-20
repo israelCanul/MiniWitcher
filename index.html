@@ -43,18 +43,24 @@
         <div class="biome-title" id="biome-label">BOSQUE CENTRAL</div>
 
         <div class="hud-panel">
-            <strong>HP</strong>
-            <div class="bar">
-                <div id="hp-bar" class="fill" style="background:#d32f2f; width:100%"></div>
+            <div class="stat-row">
+                <strong>HP</strong>
+                <div class="bar">
+                    <div id="hp-bar" class="fill" style="background:#d32f2f; width:100%"></div>
+                </div>
+                <span id="hp-value">100/100</span>
             </div>
-            <strong>VIGOR</strong>
-            <div class="bar">
-                <div id="stam-bar" class="fill" style="background:#fbc02d; width:100%"></div>
+            <div class="stat-row">
+                <strong>VIGOR</strong>
+                <div class="bar">
+                    <div id="stam-bar" class="fill" style="background:#fbc02d; width:100%"></div>
+                </div>
+                <span id="stam-value">100/100</span>
             </div>
-            <div id="quest-text"
-                style="color:#ffcc80; margin-top:10px; border-top:1px solid #5d4037; padding-top:5px; font-size: 0.9em;">
-                Usa los portales rojos para viajar
-            </div>
+        </div>
+
+        <div id="quest-board">
+            <div id="quest-text">Usa los portales rojos para viajar</div>
         </div>
 
         <div id="minimap-container">
@@ -70,6 +76,14 @@
     <script src="utils.js"></script>
     <script src="stats.js"></script>
     <script src="entities.js"></script>
+    <script src="enemies/Enemy.js"></script>
+    <script src="enemies/Bandit.js"></script>
+    <script src="enemies/Goblin.js"></script>
+    <script src="enemies/GoblinKing.js"></script>
+    <script src="enemies/Ogre.js"></script>
+    <script src="enemies/Werewolf.js"></script>
+    <script src="enemies/Crocodile.js"></script>
+    <script src="enemies/Plant.js"></script>
     <script src="world.js"></script>
     <script src="main.js"></script>
     <script src="inventory.js"></script>

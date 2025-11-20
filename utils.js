@@ -33,10 +33,20 @@ function getVillageColors(type) {
 }
 
 function createFloatText(pos, txt) {
-    const d = document.createElement('div'); d.innerText = txt; d.style.position = 'absolute'; d.style.color = 'red'; d.style.fontWeight = 'bold'; document.body.appendChild(d);
-    const p = pos.clone(); p.y += 2; p.project(camera);
-    d.style.left = (p.x * .5 + .5) * window.innerWidth + 'px'; d.style.top = (-(p.y * .5) + .5) * window.innerHeight + 'px';
-    d.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-30px)', opacity: 0 }], 500); setTimeout(() => d.remove(), 500);
+    const textElement = document.createElement('div');
+    textElement.className = 'damage-text';
+    textElement.innerText = txt;
+
+    const uiLayer = document.getElementById('ui-layer');
+    uiLayer.appendChild(textElement);
+
+    const screenPos = pos.clone().project(camera);
+    textElement.style.left = `${(screenPos.x * 0.5 + 0.5) * window.innerWidth}px`;
+    textElement.style.top = `${(-screenPos.y * 0.5 + 0.5) * window.innerHeight}px`;
+
+    setTimeout(() => {
+        textElement.remove();
+    }, 1000); // El texto desaparece después de 1 segundo (la duración de la animación)
 }
 
 function updateUI() {
