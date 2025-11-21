@@ -81,7 +81,7 @@ function animateChar(c, move, t) {
     }
 }
 
-function showTrajectory(startPos, targetPos, speed) {
+function showTrajectory(startPos, targetPos, speed, duration) {
     const points = [];
     const direction = new THREE.Vector3().subVectors(targetPos, startPos).normalize();
     const step = direction.multiplyScalar(speed * 0.1); // Simular 10% de la distancia por paso
@@ -100,7 +100,7 @@ function showTrajectory(startPos, targetPos, speed) {
     // La línea se autodestruirá
     setTimeout(() => {
         worldGroup.remove(line);
-    }, 1500); // La línea dura 1.5 segundos
+    }, (duration || 1.5) * 1000); // La línea dura lo que se le indique, o 1.5s por defecto.
 
     return line;
 }

@@ -61,13 +61,13 @@ class Goblin extends Enemy {
         this.cooldown = this.attackSpeed;
 
         const targetPosition = player.mesh.position.clone().setY(1);
-        showTrajectory(this.mesh.position.clone().setY(1.5), targetPosition, 40);
+        showTrajectory(this.mesh.position.clone().setY(1.5), targetPosition, 40, ENEMY_STATS.goblin.chargeTime);
 
         setTimeout(() => {
             if (this.hp > 0) {
                 createProjectile(this.mesh.position.clone().setY(1.5), targetPosition, 40, this.attackDamage, ENEMY_STATS.goblin.projectileLife);
             }
             this.attacking = false;
-        }, 1500);
+        }, ENEMY_STATS.goblin.chargeTime * 1000);
     }
 }

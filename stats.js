@@ -37,6 +37,7 @@ const ENEMY_STATS = {
         speed: 3,
         damage: 0.1, // Daño de flecha
         attackSpeed: 3.0, // segundos
+        chargeTime: .5, // segundos de carga del disparo
         projectileLife: 3, // segundos de vida de la flecha, controla el alcance
         attackRange: 18, // Distancia ideal de disparo
         aggroRange: 22,
